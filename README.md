@@ -110,6 +110,37 @@ After the deploy finishes (either path), the `/setup` wizard guides you the
 rest of the way — config goes into a private R2 file (`_config/runtime.json`),
 nothing sensitive is committed to GitHub.
 
+## Wire up auto-deploy (recommended)
+
+Out of the box, your Worker is deployed only when you (or the init
+script) runs `npm run deploy` locally. To make edits in `/admin`
+actually update the live site automatically — and to redeploy whenever
+you `git push` — you need to enable the GitHub Actions workflow that
+ships in `.github/workflows/deploy.yml`.
+
+One-time setup:
+
+1. Make sure you still have the Cloudflare API token you used during
+   `npm run init`. If you lost it, generate a new one at
+   <https://dash.cloudflare.com/profile/api-tokens> with the **Edit
+   Cloudflare Workers** template plus the **Workers R2 Storage → Edit**
+   permission.
+
+2. Open your fork's settings on GitHub:
+   `https://github.com/YOUR-USERNAME/YOUR-REPO/settings/secrets/actions`
+
+3. Click **New repository secret**. Name it `CLOUDFLARE_API_TOKEN`,
+   paste the token, save.
+
+That's it. From here on:
+
+- `git push` to your default branch → GitHub Actions runs → Worker
+  redeploys.
+- Edits in `/admin` (which commit to GitHub) trigger the same workflow.
+
+You can still run `npm run deploy` locally any time to force an
+immediate deploy.
+
 ## Syncing template updates
 
 When upstream pushes a bug fix or new feature, pull it into your site with:

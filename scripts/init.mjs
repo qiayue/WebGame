@@ -53,8 +53,19 @@ async function main() {
 
   // ----- Step 1: collect names -----
   step(1, 6, 'Pick a name for your site');
-  const workerName = await ask(`  Worker name:`, 'webgame');
-  const bucketName = await ask(`  R2 bucket name:`, `${workerName}-uploads`);
+  // Pre-fill the prompts from the values already in wrangler.toml. That way
+  // re-running init (e.g. to recover after a bad merge) is just "press enter
+  // a few times".
+  const tomlPathForDefaults = new URL('../wrangler.toml', import.meta.url);
+  const existing = await readExistingTomlValues(tomlPathForDefaults);
+  const defaultWorkerName =
+    existing.name && existing.name !== 'webgame-template' ? existing.name : 'webgame';
+  const defaultBucketName =
+    existing.bucketName && existing.bucketName !== 'webgame-uploads'
+      ? existing.bucketName
+      : `${defaultWorkerName}-uploads`;
+  const workerName = await ask(`  Worker name:`, defaultWorkerName);
+  const bucketName = await ask(`  R2 bucket name:`, existing.bucketName && existing.bucketName !== 'webgame-uploads' ? existing.bucketName : `${workerName}-uploads`);
   rl.close();
 
   if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(workerName)) {
@@ -192,6 +203,15 @@ function readTomlValues(toml) {
   const nameMatch = toml.match(/^name\s*=\s*"([^"]*)"/m);
   const bucketMatch = toml.match(/(?:\[\[r2_buckets\]\][^\[]*?)bucket_name\s*=\s*"([^"]*)"/s);
   return { name: nameMatch?.[1], bucketName: bucketMatch?.[1] };
+}
+
+async function readExistingTomlValues(tomlPath) {
+  try {
+    const t = await readFile(tomlPath, 'utf8');
+    return readTomlValues(t);
+  } catch {
+    return {};
+  }
 }
 
 function runStreaming(cmd, args) {

@@ -1,0 +1,40 @@
+name: Deploy to Cloudflare Workers
+
+# Auto-deploys to your Cloudflare Worker on every push to the default
+# branch. This is what makes "edit in /admin → save → site updates"
+# actually work — saving in the admin commits to this repo, which
+# triggers this workflow, which deploys to Cloudflare.
+#
+# Required GitHub repo secret (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN  Same token you used during `npm run init`.
+#
+# The account ID is read from wrangler.toml (added by `npm run init`),
+# so no separate CLOUDFLARE_ACCOUNT_ID secret is needed.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build Tailwind CSS
+        run: npm run build:css
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
