@@ -1,4 +1,4 @@
-import type { PageDetail, SiteConfig, UiStrings } from '../types';
+import type { PageDetail, PageIndex, SiteConfig, UiStrings } from '../types';
 import { html, raw } from '../lib/html';
 import { renderMeta, renderJsonLd } from '../lib/seo';
 import { renderLayout } from './layout';
@@ -10,14 +10,15 @@ export interface RenderPageInput {
   page: PageDetail;
   ui: UiStrings;
   origin: string;
+  index: PageIndex;
 }
 
 export function renderPage(input: RenderPageInput): string {
-  const { site, page, ui, origin } = input;
+  const { site, page, ui, origin, index } = input;
 
   const head = html`
-    ${renderMeta({ site, page, origin })}
-    ${renderJsonLd({ site, page, origin })}
+    ${renderMeta({ site, page, origin, index })}
+    ${renderJsonLd({ site, page, origin, index })}
     ${renderBreadcrumbJsonLd(input)}
   `;
 
@@ -26,10 +27,10 @@ export function renderPage(input: RenderPageInput): string {
   const body = html`
     ${header}
     ${breadcrumb}
-    ${renderModules({ site, page, ui })}
+    ${renderModules({ site, page, ui, index })}
   `;
 
-  return renderLayout({ site, page, ui, origin, head, body });
+  return renderLayout({ site, page, ui, origin, head, body, index });
 }
 
 function renderPageHeader(input: RenderPageInput) {

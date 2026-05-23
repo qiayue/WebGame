@@ -1,4 +1,4 @@
-import type { PageDetail, SiteConfig, UiStrings } from '../types';
+import type { PageDetail, PageIndex, SiteConfig, UiStrings } from '../types';
 import { findAlternates } from '../lib/content';
 import { html, raw, type SafeHtml } from '../lib/html';
 import { pagePath } from '../lib/url';
@@ -10,6 +10,7 @@ export interface LayoutProps {
   origin: string;
   head: SafeHtml;
   body: SafeHtml;
+  index: PageIndex;
 }
 
 export function renderLayout(p: LayoutProps): string {
@@ -87,7 +88,7 @@ function renderLangSwitcher(p: LayoutProps): SafeHtml {
     lang: page.lang,
     slug: page.slug,
   };
-  const others = findAlternates(page.alternateKey, page.lang);
+  const others = findAlternates(p.index, page.alternateKey, page.lang);
   const all = [currentEntry, ...others.map((o) => ({ type: o.type, lang: o.lang, slug: o.slug }))];
 
   if (all.length <= 1) return raw('');

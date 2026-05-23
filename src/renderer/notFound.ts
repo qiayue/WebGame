@@ -1,9 +1,14 @@
-import type { SiteConfig, UiStrings } from '../types';
+import type { PageIndex, SiteConfig, UiStrings } from '../types';
 import { renderLayout } from './layout';
 import { html, raw } from '../lib/html';
 import { pagePath } from '../lib/url';
 
-export function renderNotFound(site: SiteConfig, ui: UiStrings, lang: string): string {
+export function renderNotFound(
+  site: SiteConfig,
+  ui: UiStrings,
+  lang: string,
+  index: PageIndex,
+): string {
   const homeHref = pagePath(site, 'home', lang, 'home');
   const fakePage = {
     type: 'home' as const,
@@ -30,5 +35,6 @@ export function renderNotFound(site: SiteConfig, ui: UiStrings, lang: string): s
     origin: '',
     head: raw('<title>404 — Not Found</title><meta name="robots" content="noindex"/>'),
     body,
+    index,
   });
 }

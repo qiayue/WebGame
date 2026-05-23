@@ -7,16 +7,13 @@ import {
   saveConfig,
   type RuntimeConfig,
 } from '../lib/config';
-import { ghClient, testConnection } from '../lib/github';
 import { readSession, createSessionCookie } from '../admin/auth';
 
 // ---------------------------------------------------------------------------
 // /setup/* endpoints.
 //
-// While `config.setupCompleted` is false, all setup endpoints are unauthed —
-// the first visitor finishes setup. Once setup is complete, the wizard
-// requires an authenticated admin session to re-enter (e.g. to rotate the
-// GitHub token).
+// Two-step wizard: admin password, then R2 public URL. (GitHub is no
+// longer part of setup — content is stored directly in R2.)
 // ---------------------------------------------------------------------------
 
 export async function handleSetupApi(req: Request, env: Env): Promise<Response> {
@@ -43,8 +40,6 @@ export async function handleSetupApi(req: Request, env: Env): Promise<Response> 
   try {
     if (path === '/status' && method === 'GET') return await handleStatus(env);
     if (path === '/password' && method === 'POST') return await handleSetPassword(req, env, config, isBootstrap);
-    if (path === '/github' && method === 'POST') return await handleSetGithub(req, env, config);
-    if (path === '/github/test' && method === 'POST') return await handleTestGithub(req, env);
     if (path === '/r2' && method === 'POST') return await handleSetR2(req, env, config);
     if (path === '/r2/test' && method === 'POST') return await handleTestR2(req, env);
     if (path === '/finish' && method === 'POST') return await handleFinish(req, env, config);
@@ -63,9 +58,7 @@ async function handleStatus(env: Env): Promise<Response> {
   return json({
     setupCompleted: c.setupCompleted,
     hasPassword: !!c.adminPasswordHash,
-    hasGithub: !!c.github.token && !!c.github.repo,
     hasR2Public: !!c.r2.publicBaseUrl,
-    github: { repo: c.github.repo, branch: c.github.branch },
     r2: { publicBaseUrl: c.r2.publicBaseUrl },
   });
 }
@@ -88,8 +81,6 @@ async function handleSetPassword(
   };
   await saveConfig(env, next);
 
-  // On first-time setup, issue a session immediately so the rest of the
-  // wizard is authenticated.
   if (isBootstrap) {
     invalidateConfigCache();
     const secure = new URL(req.url).protocol === 'https:';
@@ -100,39 +91,6 @@ async function handleSetPassword(
     });
   }
   return json({ ok: true });
-}
-
-async function handleSetGithub(
-  req: Request,
-  env: Env,
-  config: RuntimeConfig,
-): Promise<Response> {
-  const body = (await req.json()) as { repo?: string; branch?: string; token?: string };
-  const repo = (body.repo ?? '').trim();
-  const branch = (body.branch ?? 'main').trim();
-  const token = (body.token ?? '').trim();
-  if (!repo.includes('/')) return json({ error: 'repo must look like owner/name' }, 400);
-  if (!token) return json({ error: 'token is required' }, 400);
-
-  const test = await testConnection({ repo, branch, token });
-  if (!test.ok) return json({ error: test.error }, 400);
-
-  const next: RuntimeConfig = {
-    ...config,
-    github: { repo, branch, token },
-  };
-  await saveConfig(env, next);
-  return json({ ok: true });
-}
-
-async function handleTestGithub(req: Request, env: Env): Promise<Response> {
-  const body = (await req.json()) as { repo?: string; branch?: string; token?: string };
-  const result = await testConnection({
-    repo: (body.repo ?? '').trim(),
-    branch: (body.branch ?? 'main').trim(),
-    token: (body.token ?? '').trim(),
-  });
-  return json(result);
 }
 
 async function handleSetR2(req: Request, env: Env, config: RuntimeConfig): Promise<Response> {
@@ -188,14 +146,11 @@ async function handleTestR2(req: Request, env: Env): Promise<Response> {
 
 async function handleFinish(_req: Request, env: Env, config: RuntimeConfig): Promise<Response> {
   if (!config.adminPasswordHash) return json({ error: 'password not set' }, 400);
-  if (!config.github.token || !config.github.repo) return json({ error: 'github not set' }, 400);
   if (!config.r2.publicBaseUrl) return json({ error: 'r2 public url not set' }, 400);
   const next: RuntimeConfig = { ...config, setupCompleted: true };
   await saveConfig(env, next);
   return json({ ok: true });
 }
-
-// ---------------------------------------------------------------------------
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {

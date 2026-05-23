@@ -23,8 +23,6 @@
     },
     status() { return this.req('/status'); },
     setPassword(p) { return this.req('/password', { method: 'POST', body: { password: p } }); },
-    saveGithub(g) { return this.req('/github', { method: 'POST', body: g }); },
-    testGithub(g) { return this.req('/github/test', { method: 'POST', body: g }); },
     saveR2(r) { return this.req('/r2', { method: 'POST', body: r }); },
     testR2(r) { return this.req('/r2/test', { method: 'POST', body: r }); },
     finish() { return this.req('/finish', { method: 'POST', body: {} }); },
@@ -56,7 +54,6 @@
     status: null,
     password: '',
     confirm: '',
-    github: { repo: '', branch: 'main', token: '' },
     r2: { publicBaseUrl: '' },
     busy: false,
     errors: {},
@@ -85,12 +82,12 @@
         h('span', { class: 'text-lg font-semibold text-slate-900' }, 'webgame-template'),
       ]),
       h('h1', { class: 'mt-2 text-2xl font-bold text-slate-900' }, 'Welcome — let’s set up your site'),
-      h('p', { class: 'mt-1 text-slate-600' }, 'About 5 minutes. We’ll configure your admin password, GitHub access, and image hosting.'),
+      h('p', { class: 'mt-1 text-slate-600' }, 'Two quick steps: pick an admin password and tell us where your R2 bucket is reachable from.'),
     ]);
   }
 
   function stepper() {
-    var steps = ['Password', 'GitHub', 'R2 images', 'Done'];
+    var steps = ['Password', 'R2 images', 'Done'];
     // After setup is complete, any step is clickable so the admin can
     // re-enter a single section (e.g. update the GitHub token).
     var clickable = state.status && state.status.setupCompleted;
@@ -119,9 +116,8 @@
 
   function currentStep() {
     if (state.step === 1) return stepPassword();
-    if (state.step === 2) return stepGithub();
-    if (state.step === 3) return stepR2();
-    if (state.step === 4) return stepDone();
+    if (state.step === 2) return stepR2();
+    if (state.step === 3) return stepDone();
     return h('div');
   }
 
@@ -160,84 +156,7 @@
     return card;
   }
 
-  // ---------------------- Step 2: GitHub ----------------------
-  function stepGithub() {
-    var card = h('div', { class: 'card p-6 space-y-4' });
-    card.appendChild(h('div', null, [
-      h('h2', { class: 'text-lg font-semibold text-slate-900' }, 'Connect GitHub'),
-      h('p', { class: 'text-sm text-slate-600 mt-1' },
-        'Content edits are committed to your repository, which automatically redeploys your Worker. ' +
-        'We need: (1) which repo to commit to, and (2) a token that can write to it.'),
-    ]));
-
-    card.appendChild(infoBox([
-      h('div', { class: 'text-sm text-slate-700' }, [
-        h('b', null, 'Step 1 of 2: '),
-        'Which repo did you deploy this site from? Enter it as ',
-        h('code', { class: 'bg-slate-100 px-1 rounded' }, 'your-github-username/webgame'),
-        ' (or whatever you named your fork).',
-      ]),
-    ]));
-    card.appendChild(field('Repository', textInput(state.github.repo, function (v) { state.github.repo = v.trim(); }, 'your-username/webgame')));
-    card.appendChild(field('Branch', textInput(state.github.branch, function (v) { state.github.branch = v.trim() || 'main'; }, 'main')));
-
-    card.appendChild(infoBox([
-      h('div', { class: 'text-sm text-slate-700' }, [
-        h('b', null, 'Step 2 of 2: '),
-        'Generate a fine-grained personal access token (a GitHub PAT).',
-      ]),
-      h('ol', { class: 'mt-2 space-y-1 text-sm text-slate-700 list-decimal pl-5' }, [
-        h('li', null, [
-          'Open ',
-          h('a', { class: 'text-brand-700 underline', href: 'https://github.com/settings/personal-access-tokens/new', target: '_blank', rel: 'noopener' },
-            'github.com/settings/personal-access-tokens/new'),
-          ' (sign in if needed).',
-        ]),
-        h('li', null, 'Token name: anything you like, e.g. "webgame".'),
-        h('li', null, ['Expiration: pick whatever you’re comfortable with (90 days is fine).']),
-        h('li', null, [
-          h('b', null, 'Repository access: '),
-          '"Only select repositories" → pick the repo above.',
-        ]),
-        h('li', null, [
-          h('b', null, 'Repository permissions: '),
-          'find ', h('b', null, 'Contents'), ' and set it to ', h('b', null, 'Read and write'), '.',
-        ]),
-        h('li', null, 'Click Generate token, then copy it and paste below.'),
-      ]),
-    ]));
-    card.appendChild(field('Personal access token', passwordInput('token', function (v) { state.github.token = v.trim(); }, 'github_pat_...')));
-
-    if (state.errors.github) card.appendChild(errBox(state.errors.github));
-    if (state.tested === 'github') card.appendChild(okBox('Connection looks good ✅'));
-
-    card.appendChild(h('div', { class: 'flex items-center gap-2 pt-2' }, [
-      secondary('Test connection', async function () {
-        state.errors = {}; state.busy = true; render();
-        try {
-          var r = await api.testGithub(state.github);
-          if (r.ok) state.tested = 'github';
-          else state.errors.github = r.error || 'connection failed';
-        } catch (e) { state.errors.github = e.message; }
-        finally { state.busy = false; render(); }
-      }),
-      h('div', { class: 'ml-auto flex items-center gap-2' }, [
-        ghost('Back', function () { state.step = 1; render(); }),
-        primary('Save & continue', async function () {
-          state.errors = {}; state.busy = true; render();
-          try {
-            await api.saveGithub(state.github);
-            state.tested = null;
-            state.step = 3;
-          } catch (e) { state.errors.github = e.message; }
-          finally { state.busy = false; render(); }
-        }),
-      ]),
-    ]));
-    return card;
-  }
-
-  // ---------------------- Step 3: R2 ----------------------
+  // ---------------------- Step 2: R2 ----------------------
   function stepR2() {
     var card = h('div', { class: 'card p-6 space-y-4' });
     card.appendChild(h('div', null, [
@@ -293,14 +212,14 @@
         finally { state.busy = false; render(); }
       }),
       h('div', { class: 'ml-auto flex items-center gap-2' }, [
-        ghost('Back', function () { state.step = 2; render(); }),
+        ghost('Back', function () { state.step = 1; render(); }),
         primary('Save & continue', async function () {
           state.errors = {}; state.busy = true; render();
           try {
             await api.saveR2(state.r2);
             await api.finish();
             state.tested = null;
-            state.step = 4;
+            state.step = 3;
           } catch (e) { state.errors.r2 = e.message; }
           finally { state.busy = false; render(); }
         }),
@@ -309,7 +228,7 @@
     return card;
   }
 
-  // ---------------------- Step 4: Done ----------------------
+  // ---------------------- Step 3: Done ----------------------
   function stepDone() {
     return h('div', { class: 'card p-8 text-center space-y-4' }, [
       h('div', { class: 'mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700' }, [
@@ -376,14 +295,9 @@
   // ---------------------- boot ----------------------
   api.status().then(function (s) {
     state.status = s;
-    // If already configured, jump to "done" (or step 1 to re-set things).
-    if (s.setupCompleted) state.step = 4;
-    else if (s.hasGithub && !s.hasR2Public) state.step = 3;
-    else if (s.hasPassword && !s.hasGithub) state.step = 2;
+    if (s.setupCompleted) state.step = 3;
+    else if (s.hasPassword && !s.hasR2Public) state.step = 2;
     else state.step = 1;
-    // Pre-fill known fields
-    if (s.github && s.github.repo) state.github.repo = s.github.repo;
-    if (s.github && s.github.branch) state.github.branch = s.github.branch;
     if (s.r2 && s.r2.publicBaseUrl) state.r2.publicBaseUrl = s.r2.publicBaseUrl;
     render();
   }).catch(function () { render(); });

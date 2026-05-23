@@ -8,11 +8,11 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./public"
 binding = "ASSETS"
 
-# Bundle JSON content into the Worker as text. Editing content via the admin
-# UI pushes to GitHub, which triggers an automatic redeploy.
+# Default JSON content bundled into the Worker — used as the initial seed
+# for a fresh R2 bucket. After first request, the runtime reads from R2.
 [[rules]]
 type = "Text"
-globs = ["**/*.json"]
+globs = ["content/**/*.json"]
 fallthrough = true
 
 # ----------------------------------------------------------------------------
@@ -21,16 +21,15 @@ fallthrough = true
 # ----------------------------------------------------------------------------
 #
 # Required:
-#   R2_UPLOADS — an R2 bucket used for cover-image uploads AND to store the
-#                runtime config file (_config/runtime.json).
+#   R2_UPLOADS — the R2 bucket. Holds:
+#     - the runtime config (_config/runtime.json)
+#     - the content (content/site.json, content/index.json, content/pages/...)
+#     - uploaded cover images (covers/...)
 #
-# Optional (advanced users only — the /setup wizard is the normal path):
-#   ADMIN_PASSWORD         Bootstrap an admin password without using the wizard.
+# Optional env vars (advanced users only — the wizard is the normal path):
+#   ADMIN_PASSWORD         Bootstrap admin password without using the wizard.
 #   ADMIN_SESSION_SECRET   Override the auto-generated session-signing secret.
 #   R2_UPLOAD_SECRET       Override the auto-generated upload-signing secret.
-#   GITHUB_TOKEN           GitHub PAT (instead of saving via the wizard).
-#   GITHUB_REPO            "owner/name".
-#   GITHUB_BRANCH          Defaults to "main".
 #   R2_PUBLIC_BASE_URL     R2 bucket's public URL.
 # ----------------------------------------------------------------------------
 

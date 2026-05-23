@@ -18,14 +18,13 @@ export interface RuntimeConfig {
   adminPasswordHash: string;     // "{salt}:{base64-hash}", PBKDF2-SHA256
   sessionSecret: string;          // for HMAC-signing session cookies
   uploadSecret: string;           // for HMAC-signing R2 upload tokens
-  github: {
-    repo: string;                 // "owner/name"
-    branch: string;
-    token: string;
-  };
   r2: {
     publicBaseUrl: string;        // e.g. https://images.your-domain.com
   };
+  // Legacy field: earlier versions of this template committed content to
+  // GitHub. Kept as an optional shape so old configs deserialise cleanly;
+  // the new code path does not touch GitHub for content edits.
+  github?: { repo?: string; branch?: string; token?: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -52,11 +51,6 @@ export async function loadConfig(env: Env): Promise<RuntimeConfig> {
     adminPasswordHash: stored.adminPasswordHash ?? '',
     sessionSecret: env.ADMIN_SESSION_SECRET || stored.sessionSecret || '',
     uploadSecret: env.R2_UPLOAD_SECRET || stored.uploadSecret || '',
-    github: {
-      repo: env.GITHUB_REPO || stored.github?.repo || '',
-      branch: env.GITHUB_BRANCH || stored.github?.branch || 'main',
-      token: env.GITHUB_TOKEN || stored.github?.token || '',
-    },
     r2: {
       publicBaseUrl: env.R2_PUBLIC_BASE_URL || stored.r2?.publicBaseUrl || '',
     },

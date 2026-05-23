@@ -207,9 +207,10 @@ Every page must contain at least one `seo-content` module for SEO purposes.
 ## Architecture
 
 - **No framework**: plain TypeScript + tagged-template HTML on the server, Tailwind CSS for styles, vanilla JS for the setup wizard and admin SPA.
-- **Runtime config in R2** (`_config/runtime.json`): admin password hash, signing secrets, GitHub token, R2 public URL. Env vars are honoured as a fallback for advanced users.
-- **Content in Git**: pages, site config, i18n strings — all version-controlled.
-- **Admin flow**: admin SPA → Worker `/admin/api` → GitHub Contents API → CF auto-deploys → JSON re-bundled into the next version.
+- **Runtime config in R2** (`_config/runtime.json`): admin password hash, signing secrets, R2 public URL. Env vars are honoured as a fallback for advanced users.
+- **Content in R2** under the `content/` prefix: pages, site config, i18n strings. The admin writes directly to R2, so edits go live in seconds without redeploying. The `content/` folder in this repo is the bundled "factory defaults" used to seed a fresh R2 bucket — once R2 has content for a key, the bundled default is ignored.
+- **Admin flow**: admin SPA → Worker `/admin/api` → R2 PUT → ~30s of in-memory cache TTL → live everywhere. Zero GitHub commits, zero CI runs.
+- **Code in Git**: src/, public/, build configs — these still flow through GitHub and trigger a Worker redeploy when changed (via `npm run deploy` or the GitHub Actions workflow).
 - **Security**: PBKDF2-hashed admin password, HMAC-signed session cookies (HttpOnly, SameSite=Strict), CSRF header on all writes, signed upload tokens for R2, per-IP login rate limiting.
 
 ## License

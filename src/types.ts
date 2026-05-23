@@ -11,10 +11,7 @@ export interface Env {
   // The normal path is the /setup wizard, which writes config to R2.
   ADMIN_PASSWORD?: string;
   ADMIN_SESSION_SECRET?: string;
-  GITHUB_TOKEN?: string;
   R2_UPLOAD_SECRET?: string;
-  GITHUB_REPO?: string;
-  GITHUB_BRANCH?: string;
   R2_PUBLIC_BASE_URL?: string;
 }
 

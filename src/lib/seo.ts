@@ -1,4 +1,4 @@
-import type { PageDetail, PageIndexEntry, PageModule, SiteConfig } from '../types';
+import type { PageDetail, PageIndex, PageIndexEntry, PageModule, SiteConfig } from '../types';
 import { findAlternates } from './content';
 import { escapeAttr, escapeHtml, html, raw, type SafeHtml } from './html';
 import { pagePath } from './url';
@@ -7,15 +7,16 @@ export interface SeoInput {
   site: SiteConfig;
   page: PageDetail;
   origin: string;
+  index: PageIndex;
 }
 
-export function renderMeta({ site, page, origin }: SeoInput): SafeHtml {
+export function renderMeta({ site, page, origin, index }: SeoInput): SafeHtml {
   const title = page.title;
   const description = page.description ?? site.description;
   const canonical = origin + pagePath(site, page.type, page.lang, page.slug);
   const ogImage = page.cover ?? '';
 
-  const alts = findAlternates(page.alternateKey, page.lang);
+  const alts = findAlternates(index, page.alternateKey, page.lang);
   const alternateLinks = alts
     .map((a) => {
       const href = origin + pagePath(site, a.type, a.lang, a.slug);

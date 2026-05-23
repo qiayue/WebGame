@@ -1,6 +1,7 @@
 import type {
   GameIframeModule,
   PageDetail,
+  PageIndex,
   PageIndexEntry,
   PageListModule,
   PageModule,
@@ -17,6 +18,7 @@ export interface RenderCtx {
   site: SiteConfig;
   page: PageDetail;
   ui: UiStrings;
+  index: PageIndex;
 }
 
 export function renderModules(ctx: RenderCtx): SafeHtml {
@@ -187,11 +189,11 @@ function defaultListHeading(m: PageListModule, ctx: RenderCtx): string {
 }
 
 function resolveListEntries(m: PageListModule, ctx: RenderCtx): PageIndexEntry[] {
-  const { page } = ctx;
+  const { page, index } = ctx;
   const limit = m.limit ?? 12;
   switch (m.source) {
     case 'latest':
-      return listPages({
+      return listPages(index, {
         lang: page.lang,
         type: m.filter?.type ?? 'game',
         limit,
@@ -199,11 +201,11 @@ function resolveListEntries(m: PageListModule, ctx: RenderCtx): PageIndexEntry[]
         excludeType: page.type,
       });
     case 'related':
-      return listRelated(page, { limit, type: m.filter?.type });
+      return listRelated(index, page, { limit, type: m.filter?.type });
     case 'tag': {
       const tag = m.filter?.tag ?? page.tagSlug ?? (page.type === 'tag' ? page.slug : undefined);
       if (!tag) return [];
-      return listPages({
+      return listPages(index, {
         lang: page.lang,
         type: m.filter?.type,
         tag,
@@ -214,9 +216,8 @@ function resolveListEntries(m: PageListModule, ctx: RenderCtx): PageIndexEntry[]
     }
     case 'manual': {
       if (!m.manual?.length) return [];
-      // Reuse the index so we get titles/covers without reading detail files.
       const out: PageIndexEntry[] = [];
-      const idx = listPages({ lang: page.lang, limit: 0 });
+      const idx = listPages(index, { lang: page.lang, limit: 0 });
       const seen = new Map(idx.map((e) => [`${e.type}/${e.slug}`, e]));
       for (const ref of m.manual) {
         const e = seen.get(`${ref.type}/${ref.slug}`);
