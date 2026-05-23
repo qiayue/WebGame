@@ -91,20 +91,29 @@
 
   function stepper() {
     var steps = ['Password', 'GitHub', 'R2 images', 'Done'];
+    // After setup is complete, any step is clickable so the admin can
+    // re-enter a single section (e.g. update the GitHub token).
+    var clickable = state.status && state.status.setupCompleted;
     return h('ol', { class: 'mb-6 flex items-center justify-between gap-2 text-xs' },
       steps.map(function (s, i) {
         var n = i + 1;
         var active = state.step === n;
         var done = state.step > n;
-        return h('li', { class: 'flex-1 flex items-center gap-2' }, [
-          h('span', {
-            class:
-              'flex h-7 w-7 items-center justify-center rounded-full font-semibold ' +
-              (done ? 'bg-emerald-100 text-emerald-700' :
-               active ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-500'),
-          }, done ? '✓' : String(n)),
-          h('span', { class: active ? 'font-semibold text-slate-900' : 'text-slate-500' }, s),
-        ]);
+        var dot = h('span', {
+          class:
+            'flex h-7 w-7 items-center justify-center rounded-full font-semibold ' +
+            (done ? 'bg-emerald-100 text-emerald-700' :
+             active ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-500'),
+        }, done ? '✓' : String(n));
+        var label = h('span', { class: active ? 'font-semibold text-slate-900' : 'text-slate-500' }, s);
+        if (clickable) {
+          return h('li', {
+            class: 'flex-1 flex items-center gap-2 cursor-pointer hover:opacity-80',
+            onClick: function () { state.step = n; state.tested = null; render(); },
+            title: 'Re-enter this step',
+          }, [dot, label]);
+        }
+        return h('li', { class: 'flex-1 flex items-center gap-2' }, [dot, label]);
       }));
   }
 
@@ -314,6 +323,8 @@
         h('a', { class: 'btn-primary', href: '/admin' }, 'Open admin →'),
         h('a', { class: 'btn-ghost', href: '/', target: '_blank' }, 'View site'),
       ]),
+      h('p', { class: 'text-xs text-slate-500 pt-4 border-t border-slate-100' },
+        'Need to update something later? Click any step in the bar above to re-enter that section.'),
     ]);
   }
 

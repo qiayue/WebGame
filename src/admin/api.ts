@@ -42,30 +42,31 @@ export async function handleAdminApi(req: Request, env: Env): Promise<Response> 
 
   try {
     // Upload endpoints
-    if (path === '/upload-token' && method === 'POST') return handleUploadToken(req, env);
-    if (path === '/upload' && method === 'PUT') return handleUpload(req, env);
+    if (path === '/upload-token' && method === 'POST') return await handleUploadToken(req, env);
+    if (path === '/upload' && method === 'PUT') return await handleUpload(req, env);
 
     // Site config
-    if (path === '/site' && method === 'GET') return handleGetSite(env);
-    if (path === '/site' && method === 'PUT') return handleSaveSite(req, env);
+    if (path === '/site' && method === 'GET') return await handleGetSite(env);
+    if (path === '/site' && method === 'PUT') return await handleSaveSite(req, env);
 
     // Content index
-    if (path === '/index' && method === 'GET') return handleGetIndex(env);
+    if (path === '/index' && method === 'GET') return await handleGetIndex(env);
 
     // Pages
     const pageMatch = /^\/page(?:\/(game|guide|tag|home)\/([a-z0-9-]+)\/([a-zA-Z0-9-_/]+))?$/.exec(
       path,
     );
     if (pageMatch && method === 'GET' && pageMatch[1]) {
-      return handleGetPage(env, pageMatch[1] as PageType, pageMatch[2]!, pageMatch[3]!);
+      return await handleGetPage(env, pageMatch[1] as PageType, pageMatch[2]!, pageMatch[3]!);
     }
-    if (path === '/page' && method === 'PUT') return handleSavePage(req, env);
+    if (path === '/page' && method === 'PUT') return await handleSavePage(req, env);
     if (pageMatch && method === 'DELETE' && pageMatch[1]) {
-      return handleDeletePage(env, pageMatch[1] as PageType, pageMatch[2]!, pageMatch[3]!);
+      return await handleDeletePage(env, pageMatch[1] as PageType, pageMatch[2]!, pageMatch[3]!);
     }
 
     return json({ error: 'not-found' }, 404);
   } catch (e: unknown) {
+    console.error('admin api error:', e);
     const message = e instanceof Error ? e.message : String(e);
     return json({ error: 'internal', message }, 500);
   }

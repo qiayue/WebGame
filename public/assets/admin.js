@@ -16,6 +16,7 @@
       siteSettings: 'Site Settings',
       viewSite: 'View site →',
       signOut: 'Sign out',
+      configureLink: 'Reconfigure deployment (GitHub token, R2 URL, password)',
       newPageBtn: '+ New Page',
       newPageItem: function (type) { return 'New ' + type + ' page'; },
       loading: 'Loading…',
@@ -131,6 +132,7 @@
       siteSettings: '站点设置',
       viewSite: '查看网站 →',
       signOut: '退出登录',
+      configureLink: '重新配置部署（GitHub Token / R2 URL / 密码）',
       newPageBtn: '+ 新建页面',
       newPageItem: function (type) {
         var map = { game: '游戏页', guide: '攻略页', tag: '标签页', home: '首页' };
@@ -406,6 +408,7 @@
           ]),
           h('div', { class: 'ml-auto flex items-center gap-2' }, [
             langSwitcher(),
+            h('a', { href: '/setup', class: 'btn-ghost', title: t('configureLink') }, '⚙'),
             h('a', { href: '/', target: '_blank', class: 'btn-ghost' }, t('viewSite')),
             h('a', { href: '/admin/logout', class: 'btn-ghost' }, t('signOut')),
           ]),

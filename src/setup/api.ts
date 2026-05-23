@@ -41,15 +41,16 @@ export async function handleSetupApi(req: Request, env: Env): Promise<Response> 
   }
 
   try {
-    if (path === '/status' && method === 'GET') return handleStatus(env);
-    if (path === '/password' && method === 'POST') return handleSetPassword(req, env, config, isBootstrap);
-    if (path === '/github' && method === 'POST') return handleSetGithub(req, env, config);
-    if (path === '/github/test' && method === 'POST') return handleTestGithub(req, env);
-    if (path === '/r2' && method === 'POST') return handleSetR2(req, env, config);
-    if (path === '/r2/test' && method === 'POST') return handleTestR2(req, env);
-    if (path === '/finish' && method === 'POST') return handleFinish(req, env, config);
+    if (path === '/status' && method === 'GET') return await handleStatus(env);
+    if (path === '/password' && method === 'POST') return await handleSetPassword(req, env, config, isBootstrap);
+    if (path === '/github' && method === 'POST') return await handleSetGithub(req, env, config);
+    if (path === '/github/test' && method === 'POST') return await handleTestGithub(req, env);
+    if (path === '/r2' && method === 'POST') return await handleSetR2(req, env, config);
+    if (path === '/r2/test' && method === 'POST') return await handleTestR2(req, env);
+    if (path === '/finish' && method === 'POST') return await handleFinish(req, env, config);
     return json({ error: 'not-found' }, 404);
   } catch (e) {
+    console.error('setup api error:', e);
     const message = e instanceof Error ? e.message : String(e);
     return json({ error: 'internal', message }, 500);
   }
